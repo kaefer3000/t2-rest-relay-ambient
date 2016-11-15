@@ -1,0 +1,15 @@
+{
+  "name": "http-ambient-and-relay",
+  "version": "0.0.0",
+  "description": "A Tessel project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "",
+  "keywords": [
+    "Tessel"
+  ],
+  "license": "MIT",
+  "readme": ""
+}
