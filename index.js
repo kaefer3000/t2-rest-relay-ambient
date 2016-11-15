@@ -2,6 +2,7 @@
 // Serves the ambient and the relay module on HTTP.
 //
 // TODO: Other RDF serialisations
+// TODO: LDP headers and implementation streamlining
 // Author: kaefer3000
 //
 
@@ -116,7 +117,7 @@ ambientApp.route('/').get(function(request, response) {
         if (blubb.route.path)
           if (blubb.route.path.startsWith('/') && blubb.route.path.length > 1) {
             ret['http://www.w3.org/ns/ldp#contains'].push(blubb.route.path.substring(1));
-            ret['http://www.w3.org/ns/ldp#contains'].push(blubb.route.path.substring(1) + '#value');
+            ret['http://example.org/hasSensorValue'].push(blubb.route.path.substring(1) + '#value');
           }
     });
 
