@@ -50,14 +50,17 @@ app.use("/relay",   relayApp);
 // LDP description of the root app
 app.all('/', redirectMissingTrailingSlash);
 app.get('/', function(request, response) {
-  response.json({
+  var returnData = JSON.stringify({
     '@id' : '' ,
     '@type' : 'http://www.w3.org/ns/ldp#BasicContainer' ,
     'http://www.w3.org/ns/ldp#contains' : ['ambient/' , 'relay/' ]
   });
+  response.status(200);
+  response.set('Content-Type', 'application/ld+json');
+  response.send(returnData);
 });
 
-// describing the light sensor
+// describing the light sensor - get JSON-LD response (set correct content-type)
 ambientApp.route("/light").get(function (request, response) {
 
   ambient.getLightLevel(function(err, data) {
@@ -66,18 +69,22 @@ ambientApp.route("/light").get(function (request, response) {
       response.send(err);
       return;
     }
-    response.json({
+    var returnData = JSON.stringify({
       '@id' : '#value' ,
       '@type' : [ 'http://www.w3.org/ns/ssn/SensorOutput' , 'http://purl.org/linked-data/cube#Observation' ] ,
       'http://xmlns.com/foaf/0.1/isPrimaryTopicOf' : '' ,
       'http://www.w3.org/ns/ssn/isValueOf' : { '@id' : '#sensorOutput' , 'http://www.w3.org/ns/ssn/isProducedBy' : '#sensor' } ,
       'http://example.org/hasLightValue' : data
     });
+
+    response.status(200);
+    response.set('Content-Type', 'application/ld+json');
+    response.send(returnData);
   });
 
 });
 
-// describing the sound sensor
+// describing the sound sensor - get JSON-LD response (set correct content-type)
 ambientApp.route('/sound').get(function (request, response) {
 
   ambient.getSoundLevel(function(err, data) {
@@ -86,7 +93,7 @@ ambientApp.route('/sound').get(function (request, response) {
       response.send(err);
       return;
     }
-    response.json({
+    var returnData = JSON.stringify({
       '@id' : '#value' ,
       '@type' : [ 'http://www.w3.org/ns/ssn/SensorOutput' , 'http://purl.org/linked-data/cube#Observation' ] ,
       'http://xmlns.com/foaf/0.1/isPrimaryTopicOf' : '' ,
@@ -96,6 +103,9 @@ ambientApp.route('/sound').get(function (request, response) {
       } ,
       'http://example.org/hasSoundValue' : data
     });
+    response.status(200);
+    response.set('Content-Type', 'application/ld+json');
+    response.send(returnData);
   });
 });
 
@@ -121,17 +131,22 @@ ambientApp.route('/').get(function(request, response) {
           }
     });
 
-  response.json(ret);
+  response.status(200);
+  response.set('Content-Type', 'application/ld+json');
+  response.send(JSON.stringify(ret));
 });
 
 // LDP description of the the relay module
 relayApp.route('/').all(redirectMissingTrailingSlash)
                    .get(function(request, response) {
-  response.json({
+  var returnData = JSON.stringify({
     '@id' : '' ,
     '@type' : 'http://www.w3.org/ns/ldp#BasicContainer' ,
     'http://www.w3.org/ns/ldp#contains' : ['1' , '2' ]
   });
+  response.status(200);
+  response.set('Content-Type', 'application/ld+json');
+  response.send(returnData);
 });
 
 // GETting the state of one switch
@@ -144,12 +159,15 @@ relayApp.route("/:id").get(function(request, response) {
         response.send(err);
         return;
       }
-      response.json({
+      var returnData = JSON.stringify({
         '@id' : '#actuator',
         'http://xmlns.com/foaf/0.1/isPrimaryTopicOf' : '',
         '@type' : 'http://purl.oclc.org/NET/UNIS/fiware/iot-lite#ActuatingDevice',
         'http://example.org/isSwitchedOn' : state
       });
+      response.status(200);
+      response.set('Content-Type', 'application/ld+json');
+      response.send(returnData);
     });
   } else {
     response.sendStatus(404);
