@@ -163,7 +163,6 @@ relayApp.route("/:id").get(function(request, response) {
 
 // PUTting the state of one switch
 relayApp.route("/:id").put(function(request, response) {
-
   if (request.params.id == 1 || request.params.id == 2) {
     relay.getState(Number(request.params.id), function(err, state) {
       if (err) {
@@ -171,33 +170,49 @@ relayApp.route("/:id").put(function(request, response) {
         response.send(err);
         return;
       }
-      if (request.body['http://example.org/isSwitchedOn']) {
-        var targetState = request.body['http://example.org/isSwitchedOn'].toLowerCase() == "true";
-        if (!targetState && request.body['http://example.org/isSwitchedOn'].toLowerCase() !== "false") {
-          response.sendStatus(400);
+      var datatype = typeof request.body['http://example.org/isSwitchedOn'];
+      var targetState;
+      switch (datatype) {
+        case "boolean":
+          targetState = request.body['http://example.org/isSwitchedOn'];
+          break;
+        case "string":
+          targetState = request.body['http://example.org/isSwitchedOn'].toLowerCase() == "true";
+          if (!targetState && request.body['http://example.org/isSwitchedOn'].toLowerCase() !== "false") {
+            response.status(400);
+            response.send("Please supply something with a proper boolean value for the http://example.org/isSwitchedOn property");
+            return;
+          }
+          break;
+        case "undefined":
+          response.status(400);
+          response.send("Please supply something with http://example.org/isSwitchedOn property (and give it a boolean value)");
           return;
-        }
-        if (targetState !== state) {
-          relay.setState(Number(request.params.id), targetState, function(err) {
-            if (err) {
-              response.sendStatus(500);
-              return;
-            }
-          });
-          response.sendStatus(204);
+        default:
+          response.status(400);
+          response.send("Please supply something with a proper boolean value for the http://example.org/isSwitchedOn property");
           return;
-        }
-      } else {
-        response.status(400);
-        response.send("Please supply something with http://example.org/isSwitchedOn property");
+      }
+      if (typeof targetState !== "boolean") {
+        response.sendStatus(500);
+      } else if (targetState !== state) {
+        relay.setState(Number(request.params.id), targetState, function(err) {
+          if (err) {
+            response.status(500);
+            response.send(err);
+            return;
+          }
+        });
+        response.sendStatus(204);
         return;
       }
       response.sendStatus(204);
+      return;
     });
   } else {
     response.sendStatus(404);
-  };
-
+    return;
+  }
 });
 
 // Startup the server
