@@ -1,5 +1,5 @@
 {
-  "name": "http-ambient-and-relay",
+  "name": "t2-rest-relay-ambient",
   "version": "0.0.0",
   "description": "A Tessel project",
   "main": "index.js",
