@@ -27,7 +27,12 @@ var app = express();
 // The two routers for the sensors/actuators
 var ambientApp = express.Router({ 'strict' : true });
 var relayApp   = express.Router({ 'strict' : true });
-relayApp.use(bodyParser.json());
+relayApp.use(bodyParser.json({'type':'application/ld+json'}));
+
+app.use(function (req, res, next) {
+  res.header("Content-Type",'application/ld+json');
+  next();
+});
 
 // configuring the app
 app.set('json spaces', 2);
