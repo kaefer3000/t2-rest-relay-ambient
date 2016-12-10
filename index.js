@@ -27,7 +27,7 @@ var app = express();
 // The two routers for the sensors/actuators
 var ambientApp = express.Router({ 'strict' : true });
 var relayApp   = express.Router({ 'strict' : true });
-relayApp.use(bodyParser.json({'type':'application/ld+json'}));
+relayApp.use(bodyParser.json({ 'type' : acceptAnyMediaType }));
 
 app.use(function (req, res, next) {
   res.header("Content-Type",'application/ld+json');
@@ -228,4 +228,24 @@ console.log(require('os').networkInterfaces());
 ambient.on('error', function (err) {
   console.log(err);
 });
+
+// check mediatype of a request for json or json-ld
+var acceptJSONLDMediaType = function(req) {
+  var datatype = typeof req.headers['content-type'];
+  switch (datatype) {
+    case "string": 
+      var mediatype = req.headers['content-type'].toLowerCase();
+      if (mediatype.startsWith("application/ld+json")
+        || mediatype.startsWith("application/json"))
+        return true;
+      else
+        return false;
+      break;
+    default:
+      return false;
+    }
+};
+
+// accept any media type for a request
+var acceptAnyMediaType = function(req) { return true; };
 
