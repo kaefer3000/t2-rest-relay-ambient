@@ -6,10 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": "",
+  "repository": { "type":"git", "url" : "https://github.com/kaefer3000/t2-rest-relay-ambient" },
   "keywords": [
     "Tessel"
   ],
   "license": "MIT",
+  "dependencies" : {"ambient-attx4":"^0.2.8","express":"^4.14.0","morgan":"^1.7.0","rdf-body-parser":"^0.3.4", "relay-mono":"^0.1.3", "body-parser":"^1.15.2"},
   "readme": ""
 }
