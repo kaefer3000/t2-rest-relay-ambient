@@ -1,7 +1,6 @@
 //
 // Serves the ambient and the relay module on HTTP.
 //
-// TODO: Other RDF serialisations
 // TODO: LDP headers and implementation streamlining
 // Author: kaefer3000
 //
@@ -277,7 +276,7 @@ relayApp.route("/:id").put(function(request, response) {
         })
       if (targetStateTripleCount === 0 || targetStateTripleCount > 1) {
           response.status(400);
-          response.send('Please supply only one triple with desired state');
+          response.send('Please supply exactly one triple with desired state');
           return;
       }
       var datatype = typeof object;
@@ -326,7 +325,7 @@ relayApp.route("/:id").put(function(request, response) {
 });
 
 // Startup the server
-var port = 8080;
+var port = 80;
 app.listen(port, function () {
   console.log('Example app listening on port ' + port);
 });
@@ -338,24 +337,4 @@ console.log(require('os').networkInterfaces());
 ambient.on('error', function (err) {
   console.log(err);
 });
-
-// check mediatype of a request for json or json-ld
-var acceptJSONLDMediaType = function(req) {
-  var datatype = typeof req.headers['content-type'];
-  switch (datatype) {
-    case "string": 
-      var mediatype = req.headers['content-type'].toLowerCase();
-      if (mediatype.startsWith("application/ld+json")
-        || mediatype.startsWith("application/json"))
-        return true;
-      else
-        return false;
-      break;
-    default:
-      return false;
-    }
-};
-
-// accept any media type for a request
-var acceptAnyMediaType = function(req) { return true; };
 
