@@ -81,8 +81,6 @@ rootRdfGraph.addAll(
 
 app.all('/', redirectMissingTrailingSlash);
 app.get('/', function(request, response) {
-  console.log(request.headers);
-  console.log(rootRdfGraph);
   response.sendGraph(rootRdfGraph);
 });
 
@@ -243,7 +241,7 @@ relayApp.route("/:id").get(function(request, response) {
           new rdf.Triple(
             new rdf.NamedNode('#value'),
             new rdf.NamedNode('http://example.org/isSwitchedOn'),
-            new rdf.Literal(state))
+            new rdf.Literal(state, null, 'http://www.w3.org/2001/XMLSchema#boolean'))
         ])
       );
     });
@@ -255,21 +253,42 @@ relayApp.route("/:id").get(function(request, response) {
 // PUTting the state of one switch
 relayApp.route("/:id").put(function(request, response) {
   if (request.params.id == 1 || request.params.id == 2) {
+    if (!request.graph) {
+      response.status(400);
+      response.send("Please supply a parseable graph.");
+      return;
+    }
     relay.getState(Number(request.params.id), function(err, state) {
       if (err) {
         response.status(500);
         response.send(err);
         return;
       }
-      var datatype = typeof request.body['http://example.org/isSwitchedOn'];
+      var targetStateTripleCount = 0;
+      var object;
+      request.graph.filter(
+        function(triple) {
+          return triple.predicate.nominalValue === 'http://example.org/isSwitchedOn'
+        }).forEach(function(triple) {
+          ++targetStateTripleCount;
+          // disabled:
+          // object = triple.object.valueOf();
+          object = triple.object.nominalValue;
+        })
+      if (targetStateTripleCount === 0 || targetStateTripleCount > 1) {
+          response.status(400);
+          response.send('Please supply only one triple with desired state');
+          return;
+      }
+      var datatype = typeof object;
       var targetState;
       switch (datatype) {
         case "boolean":
-          targetState = request.body['http://example.org/isSwitchedOn'];
+          targetState = object;
           break;
         case "string":
-          targetState = request.body['http://example.org/isSwitchedOn'].toLowerCase() == "true";
-          if (!targetState && request.body['http://example.org/isSwitchedOn'].toLowerCase() !== "false") {
+          targetState = object.toLowerCase() == "true";
+          if (!targetState && object.toLowerCase() !== "false") {
             response.status(400);
             response.send("Please supply something with a proper boolean value for the http://example.org/isSwitchedOn property");
             return;
