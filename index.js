@@ -15,24 +15,33 @@ var relaylib = require('relay-mono');
 // Load the web framework
 var express = require('express');
 // Load the logger for the web framework
-var logger = require('morgan')
-// Load some parsers for HTTP message bodys
-var bodyParser = require('body-parser')
+var logger = require('morgan');
+// Load RDF
+var rdf = require('rdf-ext')
+// Load the RDF parsers for HTTP messages
+var rdfBodyParser = require('rdf-body-parser');
+var RdfXmlSerializer = require('rdf-serializer-rdfxml');
+
+// The root app
+app = express();
+
+// Preparing to use my rdf/xml serialiser
+var formatparams = {};
+formatparams.serializers = new rdf.Serializers();
+formatparams.serializers['application/rdf+xml'] = RdfXmlSerializer;
+var formats = require('rdf-formats-common')(formatparams);
+
+var configuredBodyParser = rdfBodyParser({'defaultMediaType' : 'text/turtle', 'formats' : formats});
+
+app.use(configuredBodyParser);
 
 var relay   = relaylib.use(tessel.port['A']);  
 var ambient = ambientlib.use(tessel.port['B']);
 
-// The root app
-var app = express();
 // The two routers for the sensors/actuators
 var ambientApp = express.Router({ 'strict' : true });
 var relayApp   = express.Router({ 'strict' : true });
-relayApp.use(bodyParser.json({ 'type' : acceptAnyMediaType }));
-
-app.use(function (req, res, next) {
-  res.header("Content-Type",'application/ld+json');
-  next();
-});
+relayApp.use(configuredBodyParser);
 
 // configuring the app
 app.set('json spaces', 2);
@@ -53,15 +62,54 @@ app.use("/ambient", ambientApp);
 app.use("/relay",   relayApp);
 
 // LDP description of the root app
+var rootRdfGraph = rdf.createGraph();
+rootRdfGraph.addAll(
+  [
+    new rdf.Triple(
+      new rdf.NamedNode(''),
+      new rdf.NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+      new rdf.NamedNode('http://www.w3.org/ns/ldp#BasicContainer')),
+    new rdf.Triple(
+      new rdf.NamedNode(''),
+      new rdf.NamedNode('http://www.w3.org/ns/ldp#contains'),
+      new rdf.NamedNode('ambient/')),
+   new rdf.Triple(
+      new rdf.NamedNode(''),
+      new rdf.NamedNode('http://www.w3.org/ns/ldp#contains'),
+      new rdf.NamedNode('relay/'))
+  ])
+
 app.all('/', redirectMissingTrailingSlash);
 app.get('/', function(request, response) {
-  response.json({
-    '@id' : '' ,
-    '@type' : 'http://www.w3.org/ns/ldp#BasicContainer' ,
-    'http://www.w3.org/ns/ldp#contains' : ['ambient/' , 'relay/' ]
-  });
+  console.log(request.headers);
+  console.log(rootRdfGraph);
+  response.sendGraph(rootRdfGraph);
 });
 
+var ambientAppLightGraph = rdf.createGraph();
+ambientAppLightGraph.addAll(
+  [
+    new rdf.Triple(
+      new rdf.NamedNode('#value'),
+      new rdf.NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+      new rdf.NamedNode('http://www.w3.org/ns/ssn/SensorOutput')),
+    new rdf.Triple(
+      new rdf.NamedNode('#value'),
+      new rdf.NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+      new rdf.NamedNode('http://purl.org/linked-data/cube#Observation')),
+    new rdf.Triple(
+      new rdf.NamedNode('#value'),
+      new rdf.NamedNode('http://xmlns.com/foaf/0.1/isPrimaryTopicOf'),
+      new rdf.NamedNode('')),
+   new rdf.Triple(
+      new rdf.NamedNode('#value'),
+      new rdf.NamedNode('http://www.w3.org/ns/ssn/isValueOf'),
+      new rdf.NamedNode('#sensorOutput')),
+   new rdf.Triple(
+      new rdf.NamedNode('#sensorOutput'),
+      new rdf.NamedNode('http://www.w3.org/ns/ssn/isProducedBy'),
+      new rdf.NamedNode('#sensor')),
+  ])
 // describing the light sensor
 ambientApp.route("/light").get(function (request, response) {
 
@@ -71,15 +119,14 @@ ambientApp.route("/light").get(function (request, response) {
       response.send(err);
       return;
     }
-    response.json({
-      '@id' : '#value' ,
-      '@type' : [ 'http://www.w3.org/ns/ssn/SensorOutput' , 'http://purl.org/linked-data/cube#Observation' ] ,
-      'http://xmlns.com/foaf/0.1/isPrimaryTopicOf' : '' ,
-      'http://www.w3.org/ns/ssn/isValueOf' : { '@id' : '#sensorOutput' , 'http://www.w3.org/ns/ssn/isProducedBy' : '#sensor' } ,
-      'http://example.org/hasLightValue' : data
-    });
+    response.sendGraph(
+      ambientAppLightGraph.merge(
+        [ new rdf.Triple(
+            new rdf.NamedNode('#value'),
+            new rdf.NamedNode('http://example.org/hasLightValue'),
+            new rdf.Literal(data))
+        ]))
   });
-
 });
 
 // describing the sound sensor
@@ -91,54 +138,97 @@ ambientApp.route('/sound').get(function (request, response) {
       response.send(err);
       return;
     }
-    response.json({
-      '@id' : '#value' ,
-      '@type' : [ 'http://www.w3.org/ns/ssn/SensorOutput' , 'http://purl.org/linked-data/cube#Observation' ] ,
-      'http://xmlns.com/foaf/0.1/isPrimaryTopicOf' : '' ,
-      'http://www.w3.org/ns/ssn/isValueOf' : {
-        '@id' : '#sensorOutput' ,
-        'http://www.w3.org/ns/ssn/isProducedBy' : '#sensor'
-      } ,
-      'http://example.org/hasSoundValue' : data
-    });
+    response.sendGraph(
+      ambientAppLightGraph.merge(
+        [ new rdf.Triple(
+            new rdf.NamedNode('#value'),
+            new rdf.NamedNode('http://example.org/hasSoundValue'),
+            new rdf.Literal(data))
+        ]))
   });
 });
+
+var ambientAppGraph = rdf.createGraph();
+ambientAppGraph.addAll([
+  new rdf.Triple(
+      new rdf.NamedNode(''),
+      new rdf.NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+      new rdf.NamedNode('http://www.w3.org/ns/ldp#IndirectContainer')),
+  new rdf.Triple(
+      new rdf.NamedNode(''),
+      new rdf.NamedNode('http://www.w3.org/ns/ldp#hasMemberRelation'),
+      new rdf.NamedNode('http://example.org/hasSensorValue')),
+  new rdf.Triple(
+      new rdf.NamedNode(''),
+      new rdf.NamedNode('http://www.w3.org/ns/ldp#insertedContentRelation'),
+      new rdf.NamedNode('http://xmlns.com/foaf/0.1/primaryTopic')),
+  new rdf.Triple(
+      new rdf.NamedNode(''),
+      new rdf.NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+      new rdf.NamedNode('http://www.w3.org/ns/ldp#IndirectContainer'))
+]);
 
 // LDP description of the sensors of the ambient module
 ambientApp.route('/').all(redirectMissingTrailingSlash);
 ambientApp.route('/').get(function(request, response) {
 
-  var ret = {
-    '@id' : '' ,
-    '@type' : 'http://www.w3.org/ns/ldp#IndirectContainer' ,
-    'http://www.w3.org/ns/ldp#hasMemberRelation' : 'http://example.org/hasSensorValue',
-    'http://www.w3.org/ns/ldp#insertedContentRelation' : 'http://xmlns.com/foaf/0.1/primaryTopic',
-    'http://www.w3.org/ns/ldp#contains' : [],
-    'http://example.org/hasSensorValue' : []
-  };
-
+  var ret = ambientAppGraph.clone()
   if (ambientApp.stack)
     ambientApp.stack.forEach(function(blubb){
         if (blubb.route.path)
           if (blubb.route.path.startsWith('/') && blubb.route.path.length > 1) {
-            ret['http://www.w3.org/ns/ldp#contains'].push(blubb.route.path.substring(1));
-            ret['http://example.org/hasSensorValue'].push(blubb.route.path.substring(1) + '#value');
+            ret.addAll([
+              new rdf.Triple(
+                  new rdf.NamedNode(''),
+                  new rdf.NamedNode('http://www.w3.org/ns/ldp#contains'),
+                  new rdf.NamedNode(blubb.route.path.substring(1))),
+              new rdf.Triple(
+                  new rdf.NamedNode(''),
+                  new rdf.NamedNode('http://example.org/hasSensorValue'),
+                  new rdf.NamedNode(blubb.route.path.substring(1) + '#value'))
+            ])
           }
-    });
-
-  response.json(ret);
+    })
+  response.sendGraph(ret);
 });
+
+var relayAppGraph = rdf.createGraph()
+relayAppGraph.addAll([
+  new rdf.Triple(
+      new rdf.NamedNode(''),
+      new rdf.NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+      new rdf.NamedNode('http://www.w3.org/ns/ldp#BasicContainer')),
+  new rdf.Triple(
+      new rdf.NamedNode(''),
+      new rdf.NamedNode('http://www.w3.org/ns/ldp#contains'),
+      new rdf.NamedNode('http://example.org/hasSensorValue')),
+  new rdf.Triple(
+      new rdf.NamedNode(''),
+      new rdf.NamedNode('http://www.w3.org/ns/ldp#contains'),
+      new rdf.NamedNode('1')),
+  new rdf.Triple(
+      new rdf.NamedNode(''),
+      new rdf.NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+      new rdf.NamedNode(''))
+])
 
 // LDP description of the the relay module
 relayApp.route('/').all(redirectMissingTrailingSlash)
                    .get(function(request, response) {
-  response.json({
-    '@id' : '' ,
-    '@type' : 'http://www.w3.org/ns/ldp#BasicContainer' ,
-    'http://www.w3.org/ns/ldp#contains' : ['1' , '2' ]
-  });
+  response.sendGraph(relayAppGraph)
 });
 
+var relayBaseGraph = rdf.createGraph()
+relayBaseGraph.addAll([
+  new rdf.Triple(
+      new rdf.NamedNode('#actuator'),
+      new rdf.NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+      new rdf.NamedNode('http://purl.oclc.org/NET/UNIS/fiware/iot-lite#ActuatingDevice')),
+  new rdf.Triple(
+      new rdf.NamedNode('#actuator'),
+      new rdf.NamedNode('http://xmlns.com/foaf/0.1/isPrimaryTopicOf'),
+      new rdf.NamedNode(''))
+])
 // GETting the state of one switch
 relayApp.route("/:id").get(function(request, response) {
 
@@ -149,12 +239,13 @@ relayApp.route("/:id").get(function(request, response) {
         response.send(err);
         return;
       }
-      response.json({
-        '@id' : '#actuator',
-        'http://xmlns.com/foaf/0.1/isPrimaryTopicOf' : '',
-        '@type' : 'http://purl.oclc.org/NET/UNIS/fiware/iot-lite#ActuatingDevice',
-        'http://example.org/isSwitchedOn' : state
-      });
+      response.sendGraph(relayBaseGraph.merge([
+          new rdf.Triple(
+            new rdf.NamedNode('#value'),
+            new rdf.NamedNode('http://example.org/isSwitchedOn'),
+            new rdf.Literal(state))
+        ])
+      );
     });
   } else {
     response.sendStatus(404);
