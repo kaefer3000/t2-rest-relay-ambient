@@ -8,8 +8,8 @@
     "express": "^4.14.0",
     "morgan": "^1.7.0",
     "relay-mono": "^0.1.3",
-    "body-parser": "^1.15.2",
     "rdf-ext": "^0.3.0",
+    "rdf-formats-common" : "^0.3.0",
     "rdf-serializer-rdfxml": "git://github.com/kaefer3000/rdf-serializer-rdfxml",
     "rdf-body-parser": "git://github.com/kaefer3000/rdf-body-parser"
   },
