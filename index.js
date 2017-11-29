@@ -198,15 +198,11 @@ relayAppGraph.addAll([
   new rdf.Triple(
       new rdf.NamedNode(''),
       new rdf.NamedNode('http://www.w3.org/ns/ldp#contains'),
-      new rdf.NamedNode('http://example.org/hasSensorValue')),
-  new rdf.Triple(
-      new rdf.NamedNode(''),
-      new rdf.NamedNode('http://www.w3.org/ns/ldp#contains'),
       new rdf.NamedNode('1')),
   new rdf.Triple(
       new rdf.NamedNode(''),
-      new rdf.NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-      new rdf.NamedNode(''))
+      new rdf.NamedNode('http://www.w3.org/ns/ldp#contains'),
+      new rdf.NamedNode('2'))
 ])
 
 // LDP description of the the relay module
