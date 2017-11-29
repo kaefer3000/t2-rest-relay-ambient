@@ -1,8 +1,19 @@
 {
   "name": "t2-rest-relay-ambient",
   "version": "0.0.2",
-  "description": "A Tessel project",
+  "description": "REST + Linked Data interface for a Tessel 2 with an ambient and relay module",
   "main": "index.js",
+  "dependencies": {
+    "ambient-attx4": "^0.2.8",
+    "express": "^4.14.0",
+    "morgan": "^1.7.0",
+    "relay-mono": "^0.1.3",
+    "body-parser": "^1.15.2",
+    "rdf-ext": "^0.3.0",
+    "rdf-serializer-rdfxml": "git://github.com/kaefer3000/rdf-serializer-rdfxml",
+    "rdf-body-parser": "git://github.com/kaefer3000/rdf-body-parser"
+  },
+  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,6 +22,5 @@
     "Tessel"
   ],
   "license": "MIT",
-  "dependencies" : {"ambient-attx4":"^0.2.8","express":"^4.14.0","morgan":"^1.7.0", "relay-mono":"^0.1.3", "body-parser":"^1.15.2", "rdf-ext" : "^0.3.0", "rdf-serializer-rdfxml" : "file:../../git/rdf-serializer-rdfxml","rdf-body-parser" : "file:../../git/rdf-body-parser" },
-  "readme": ""
+  "readme": "A bare bones Tessel 2 blinky script."
 }
